@@ -1,0 +1,9 @@
+{
+  "appId": "com.empresa.fleet",
+  "appName": "Fleet Tracking Pro",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}

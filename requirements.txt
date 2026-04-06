@@ -4,3 +4,4 @@ httpx==0.25.2
 shapely==2.0.2
 pyproj==3.6.1
 holidays==0.35
+mangum==0.17.0

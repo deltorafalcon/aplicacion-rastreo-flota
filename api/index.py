@@ -5,6 +5,7 @@ import asyncio
 from datetime import datetime
 from spatial_utils import check_risks_on_route
 from rules_engine import obtener_restriccion_carga
+from mangum import Mangum
 
 app = FastAPI(title="PESV Dynamic Risk API")
 
@@ -45,7 +46,7 @@ def calcular_score(alertas, restriccion):
         return "RIESGO ALTO - RUTA ALTERNA"
     return "ÓPTIMO"
 
-@app.post("/api/analizar-ruta")
+@app.post("/analizar-ruta")
 async def analizar_ruta(
     payload: dict = Body(...),
     radio: int = 1000
@@ -71,7 +72,7 @@ async def analizar_ruta(
         "recomendacion_pesv": "ALTA PRECAUCIÓN" if alertas else "RUTA DESPEJADA"
     }
 
-@app.post("/api/analizar-ruta-pro")
+@app.post("/analizar-ruta-pro")
 async def analizar_ruta_pro(
     payload: dict = Body(...), 
     tipo_vehiculo: str = "tractocamion",
@@ -108,10 +109,13 @@ async def analizar_ruta_pro(
         "score_seguridad": calcular_score(alertas_geograficas, restriccion)
     }
 
-@app.get("/api/v1/salud")
+@app.get("/v1/salud")
 def health_check():
     return {"status": "online", "engine": "FastAPI on Vercel"}
 
 @app.get("/")
 def root():
     return {"message": "PESV API is running", "docs": "/docs"}
+
+# Mangum handler for Vercel
+handler = Mangum(app)

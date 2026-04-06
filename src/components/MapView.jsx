@@ -133,6 +133,38 @@ const HeatmapLayer = ({ url, attribution }) => {
     return null;
 };
 
+// Speeding Heatmap Layer - Shows vehicle speed violations
+const SpeedingHeatmapLayer = ({ fleet, speedLimit = 50 }) => {
+    const map = useMap();
+
+    useEffect(() => {
+        const heatLayer = L.heatLayer([], {
+            radius: 30,
+            blur: 20,
+            maxZoom: 14,
+            gradient: { 0.2: 'rgba(255, 165, 0, 0.5)', 0.5: 'rgba(255, 100, 0, 0.7)', 1.0: 'rgba(255, 0, 0, 0.9)' }
+        }).addTo(map);
+
+        // Generate heatmap points from speeding vehicles
+        const speedingPoints = fleet
+            .filter(vehicle => vehicle.speed > speedLimit)
+            .map(vehicle => {
+                const intensity = Math.min((vehicle.speed - speedLimit) / 50, 1); // Normalize intensity
+                return [vehicle.location[0], vehicle.location[1], intensity];
+            });
+
+        if (speedingPoints.length > 0) {
+            heatLayer.setLatLngs(speedingPoints);
+        }
+
+        return () => {
+            map.removeLayer(heatLayer);
+        };
+    }, [map, fleet, speedLimit]);
+
+    return null;
+};
+
 // Custom Esri Layer bridge for React-Leaflet
 const EsriLayer = ({ type, url, attribution, opacity = 0.8 }) => {
     const map = useMap();
@@ -386,6 +418,31 @@ const MapView = ({ fleet, selectedVehicle, routePolyline }) => {
                 {/* Active Overlays (ANSV / INVIAS) using EsriLayer bridge or Heatmap */}
                 {activeOverlays.map(id => {
                     const overlay = OVERLAYS[id];
+                    if (!overlay) return null;
+
+                    if (overlay.type === 'heatmap') {
+                        return (
+                            <HeatmapLayer
+                                key={id}
+                                url={overlay.url}
+                                attribution={overlay.attribution}
+                            />
+                        );
+                    } else {
+                        return (
+                            <EsriLayer
+                                key={id}
+                                type={overlay.type}
+                                url={overlay.url}
+                                attribution={overlay.attribution}
+                                opacity={0.8}
+                            />
+                        );
+                    }
+                })}
+
+                {/* Speeding Heatmap Layer - Shows excess speed violations */}
+                <SpeedingHeatmapLayer fleet={fleet} speedLimit={50} />
                     if (overlay.type === 'heatmap') {
                         return (
                             <HeatmapLayer

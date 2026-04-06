@@ -3,7 +3,7 @@ export const generateMockFleet = () => [
         id: 'V-001',
         name: 'Camión Norte 01',
         driver: 'Luis Rodríguez',
-        location: [4.6097, -74.0817], // Bogota
+        location: [4.7260, -74.2678], // Bogota - Updated coordinates
         speed: 45,
         status: 'active',
         plate: 'SKR-456',
@@ -13,7 +13,7 @@ export const generateMockFleet = () => [
         id: 'V-002',
         name: 'Van Entrega 02',
         driver: 'María García',
-        location: [4.6597, -74.1017],
+        location: [4.7360, -74.2778],
         speed: 85,
         status: 'speeding',
         plate: 'ZXC-789',
@@ -23,7 +23,7 @@ export const generateMockFleet = () => [
         id: 'V-003',
         name: 'Trailer Pesado 03',
         driver: 'Carlos Pérez',
-        location: [4.6297, -74.0517],
+        location: [4.7160, -74.2578],
         speed: 0,
         status: 'stopped',
         plate: 'BNM-123',

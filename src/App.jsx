@@ -19,7 +19,7 @@ function App() {
     const saved = localStorage.getItem('fleet_speeding_log');
     return saved ? JSON.parse(saved) : [];
   });
-  const [speedLimit, setSpeedLimit] = useState(60); // Default city limit
+  const [speedLimit, setSpeedLimit] = useState(50); // Default city limit - detect excesses over 50 km/h
   const [dailyStats, setDailyStats] = useState(() => {
     const saved = localStorage.getItem('fleet_daily_stats');
     const today = new Date().toISOString().split('T')[0];
@@ -73,7 +73,7 @@ function App() {
           const driverData = buildDriverData(pos);
           setFleet([driverData]);
           apiService.updateVehicle(driverData);
-        }, 5000);
+        }, 1000);
       };
 
       startDriverTracking();

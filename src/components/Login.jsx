@@ -105,7 +105,7 @@ const Login = ({ onLogin }) => {
 
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
-                        <label>{role === 'admin' ? 'Usuario Admin' : 'Placa del Vehículo'}</label>
+                        <label>{role === 'admin' ? 'usuario administrador' : 'placa del vehículo'}</label>
                         <div style={{ position: 'relative' }}>
                             <User size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
                             <input
@@ -130,7 +130,7 @@ const Login = ({ onLogin }) => {
                     {role === 'driver' && (
                         <>
                             <div className="form-group">
-                                <label>Nombre del Conductor</label>
+                                <label>nombre del conductor</label>
                                 <div style={{ position: 'relative' }}>
                                     <User size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
                                     <input
@@ -144,7 +144,7 @@ const Login = ({ onLogin }) => {
                                 </div>
                             </div>
                             <div className="form-group">
-                                <label>Identificación del Conductor</label>
+                                <label>identificación del conductor</label>
                                 <div style={{ position: 'relative' }}>
                                     <User size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
                                     <input
@@ -184,7 +184,7 @@ const Login = ({ onLogin }) => {
                     )}
 
                     <button type="submit" className="login-button">
-                        Entrar como {role === 'admin' ? 'Administrador' : 'Conductor'}
+                        entrar como {role === 'admin' ? 'administrador' : 'conductor'}
                     </button>
                 </form>
 

@@ -11,7 +11,7 @@ const FleetDashboard = ({ fleet, onSelect, selectedId, onLogout, speedingLogCoun
                     <ShieldCheck color="var(--accent-color)" /> Fleet Manager
                 </h2>
                 <p style={{ color: 'var(--text-dim)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-                    Panel de Administración de Flota
+                    panel de administración de flota
                 </p>
             </div>
 

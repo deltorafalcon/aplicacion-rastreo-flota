@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import * as Esri from 'esri-leaflet';
 import 'leaflet.heat';
+import { getStoredRoute } from './RouteHistory';
 
 // Fix for default marker icons in Leaflet + Vite
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -83,14 +84,6 @@ const OVERLAYS = {
         type: 'feature',
         icon: '⭐'
     },
-    invias_postes: {
-        id: 'invias_postes',
-        name: 'Postes Kilométricos (INVIAS)',
-        url: 'https://hermes.invias.gov.co/arcgis/rest/services/Mapa_Carreteras/Mapa_de_Carreteras/MapServer/0',
-        attribution: '&copy; INVIAS Colombia',
-        type: 'feature',
-        icon: '📍'
-    }
 };
 
 // Heatmap Layer using leaflet.heat
@@ -198,7 +191,7 @@ const getVehicleIcon = (status) => {
     const color = status === 'speeding' ? '#ef4444' : '#3b82f6';
     const svgIcon = `
             <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="10" fill="${color}" fill-opacity="0.2" stroke="${color}" stroke-width="2"/>
+                <circle cx="12" cy="12" r="10" fill="${color}" fill-opacity="0.18" stroke="${color}" stroke-width="2"/>
                 <circle cx="12" cy="12" r="4" fill="${color}"/>
             </svg>
         `;
@@ -210,6 +203,43 @@ const getVehicleIcon = (status) => {
     });
 };
 
+const SAFETY_FACILITIES = [
+    { id: 'police-1', name: 'Estación Policía Fontibón', type: 'police', location: [4.6954, -74.1443] },
+    { id: 'police-2', name: 'Puesto de Control Policía Suba', type: 'police', location: [4.7801, -74.1024] },
+    { id: 'fire-1', name: 'Bomberos Bogotá Estación Central', type: 'fire', location: [4.5981, -74.0758] },
+    { id: 'fire-2', name: 'Bomberos Usaquén', type: 'fire', location: [4.7427, -74.0257] },
+    { id: 'health-1', name: 'Cruz Roja Colombiana - Seccional Bogotá', type: 'health', location: [4.6708, -74.0395] },
+    { id: 'rescue-1', name: 'Entidad de Socorro Local', type: 'rescue', location: [4.6302, -74.0701] }
+];
+
+const getSafetyIcon = (type) => {
+    const icons = {
+        police: '👮‍♂️',
+        fire: '🔥',
+        health: '🚑',
+        rescue: '🛟'
+    };
+    const background = {
+        police: '#0ea5e9',
+        fire: '#ef4444',
+        health: '#10b981',
+        rescue: '#f59e0b'
+    };
+    return L.divIcon({
+        html: `<div style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:${background[type]};color:#fff;border:2px solid rgba(255,255,255,0.9);font-size:18px;">${icons[type] || '❗'}</div>`,
+        className: 'safety-facility-icon',
+        iconSize: [34, 34],
+        iconAnchor: [17, 17]
+    });
+};
+
+const getSpeedSegmentStyle = (speed) => {
+    if (speed <= 30) return { color: '#22c55e', weight: 4, opacity: 0.9 };
+    if (speed <= 50) return { color: '#f59e0b', weight: 5, opacity: 0.95 };
+    if (speed <= 90) return { color: '#ef4444', weight: 6, opacity: 0.95 };
+    return { color: '#b91c1c', weight: 8, opacity: 1 };
+};
+
 function ChangeView({ center, zoom }) {
     const map = useMap();
     if (center) map.setView(center, zoom);
@@ -217,7 +247,7 @@ function ChangeView({ center, zoom }) {
 }
 
 // Basemap Switcher Component
-const BasemapSwitcher = ({ activeBasemap, onSwitch, activeOverlays, onToggleOverlay }) => {
+const BasemapSwitcher = ({ activeBasemap, onSwitch, activeOverlays, onToggleOverlay, routeAlerts, alertsLoading }) => {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
@@ -361,6 +391,82 @@ const BasemapSwitcher = ({ activeBasemap, onSwitch, activeOverlays, onToggleOver
                         </button>
                     ))}
 
+                    {activeOverlays.includes('ansv_mortalidad') && (
+                        <div style={{
+                            marginTop: '12px',
+                            padding: '10px',
+                            borderRadius: '12px',
+                            background: 'rgba(255,255,255,0.04)',
+                            border: '1px solid rgba(255,255,255,0.08)'
+                        }}>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 700, marginBottom: '8px' }}>Mortalidad Municipal</div>
+                            <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.75)', marginBottom: '8px' }}>
+                                Datos ANSV via datos.gov.co (dataset v5m2-p35c). Consulta en JSON con filtros de municipio.
+                            </div>
+                            {mortalityLoading ? (
+                                <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Cargando datos...</div>
+                            ) : mortalityData.length === 0 ? (
+                                <div style={{ fontSize: '0.72rem', color: '#f97316' }}>No se encontraron resultados.</div>
+                            ) : (
+                                <div style={{ display: 'grid', gap: '6px' }}>
+                                    {mortalityData.map((item, index) => (
+                                        <div key={index} style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', fontSize: '0.72rem', color: '#e2e8f0' }}>
+                                            <span>{item.municipio}</span>
+                                            <strong style={{ color: '#fff' }}>{item.fallecidos}</strong>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            <a href="https://datos.gov.co/resource/v5m2-p35c.json?$select=a%C3%B1o,municipio,cantidad_fallecidos" target="_blank" rel="noreferrer" style={{ display: 'block', marginTop: '10px', color: '#60a5fa', fontSize: '0.7rem' }}>
+                                Ver consulta en datos.gov.co
+                            </a>
+                        </div>
+                    )}
+
+                    {/* Route Risk Analysis Panel */}
+                    {routeAlerts.length > 0 && (
+                        <div style={{
+                            marginTop: '12px',
+                            padding: '10px',
+                            borderRadius: '12px',
+                            background: 'rgba(220, 38, 38, 0.1)',
+                            border: '1px solid rgba(220, 38, 38, 0.3)'
+                        }}>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 700, marginBottom: '8px', color: '#fca5a5' }}>🚨 Alertas de Ruta PESV</div>
+                            <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.75)', marginBottom: '8px' }}>
+                                Análisis espacial detectó {routeAlerts.length} riesgo(s) en la ruta.
+                            </div>
+                            <div style={{ display: 'grid', gap: '6px' }}>
+                                {routeAlerts.slice(0, 3).map((alert, index) => (
+                                    <div key={index} style={{ fontSize: '0.7rem', color: '#fecaca', background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '6px' }}>
+                                        <strong>{alert.evento}</strong><br />
+                                        <small>Distancia: {alert.distancia_via}m</small>
+                                    </div>
+                                ))}
+                                {routeAlerts.length > 3 && (
+                                    <div style={{ fontSize: '0.7rem', color: '#fca5a5', fontStyle: 'italic' }}>
+                                        ...y {routeAlerts.length - 3} más
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {alertsLoading && (
+                        <div style={{
+                            marginTop: '12px',
+                            padding: '10px',
+                            borderRadius: '12px',
+                            background: 'rgba(255,255,255,0.04)',
+                            border: '1px solid rgba(255,255,255,0.08)'
+                        }}>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 700, marginBottom: '8px' }}>🔍 Analizando Ruta</div>
+                            <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.75)' }}>
+                                Consultando APIs de UNGRD y accidentes viales...
+                            </div>
+                        </div>
+                    )}
+
                     <div style={{
                         marginTop: '10px',
                         paddingTop: '10px',
@@ -369,7 +475,7 @@ const BasemapSwitcher = ({ activeBasemap, onSwitch, activeOverlays, onToggleOver
                         color: 'rgba(255,255,255,0.3)',
                         textAlign: 'center'
                     }}>
-                        Datos: ANSV, INVIAS, ArcGIS
+                        Datos: ANSV, INVIAS, ArcGIS | Análisis: PESV API
                     </div>
                 </div>
             )}
@@ -380,13 +486,95 @@ const BasemapSwitcher = ({ activeBasemap, onSwitch, activeOverlays, onToggleOver
 const MapView = ({ fleet, selectedVehicle, routePolyline }) => {
     const [activeBasemap, setActiveBasemap] = useState('carto_dark');
     const [activeOverlays, setActiveOverlays] = useState([]);
+    const [mortalityData, setMortalityData] = useState([]);
+    const [mortalityLoading, setMortalityLoading] = useState(false);
+    const [routePoints, setRoutePoints] = useState([]);
+    const [routeAlerts, setRouteAlerts] = useState([]);
+    const [alertsLoading, setAlertsLoading] = useState(false);
     const currentBasemap = BASEMAPS[activeBasemap];
+    const today = new Date().toISOString().split('T')[0];
 
     const toggleOverlay = (id) => {
         setActiveOverlays(prev =>
             prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
         );
     };
+
+    useEffect(() => {
+        if (!activeOverlays.includes('ansv_mortalidad')) return;
+
+        setMortalityLoading(true);
+        fetch('https://datos.gov.co/resource/v5m2-p35c.json?$select=municipio,sum(cantidad_fallecidos) as fallecidos&$group=municipio&$order=sum(cantidad_fallecidos)%20DESC&$limit=8')
+            .then(res => res.json())
+            .then(data => {
+                setMortalityData(data.map(item => ({ municipio: item.municipio, fallecidos: Number(item.fallecidos || 0) })));
+                setMortalityLoading(false);
+            })
+            .catch(() => {
+                setMortalityData([]);
+                setMortalityLoading(false);
+            });
+    }, [activeOverlays]);
+
+    useEffect(() => {
+        if (selectedVehicle) {
+            setRoutePoints(getStoredRoute(selectedVehicle.id, today));
+        } else {
+            setRoutePoints([]);
+        }
+    }, [selectedVehicle, today]);
+
+    // Analyze route for risks when routePolyline changes
+    useEffect(() => {
+        if (!routePolyline || routePolyline.length < 2) {
+            setRouteAlerts([]);
+            return;
+        }
+
+        const analyzeRoute = async () => {
+            setAlertsLoading(true);
+            try {
+                // Convert routePolyline to coordinates format [lon, lat]
+                const coordinates = routePolyline.map(point => [point[1], point[0]]); // Leaflet uses [lat, lon], API expects [lon, lat]
+
+                const response = await fetch('https://tu-api.vercel.app/api/analizar-ruta', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        coordinates: coordinates
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Error en la respuesta del API');
+                }
+
+                const data = await response.json();
+                setRouteAlerts(data.alertas || []);
+            } catch (error) {
+                console.error('Error analizando ruta:', error);
+                setRouteAlerts([]);
+            } finally {
+                setAlertsLoading(false);
+            }
+        };
+
+        analyzeRoute();
+    }, [routePolyline]);
+
+    const speedSegments = useMemo(() => {
+        if (!routePoints || routePoints.length < 2) return [];
+        return routePoints.slice(1).map((point, index) => {
+            const prev = routePoints[index];
+            return {
+                positions: [[prev.lat, prev.lng], [point.lat, point.lng]],
+                speed: point.speed || 0,
+                style: getSpeedSegmentStyle(point.speed || 0)
+            };
+        });
+    }, [routePoints]);
 
     return (
         <div style={{ position: 'relative', height: '100%', width: '100%' }}>
@@ -428,29 +616,6 @@ const MapView = ({ fleet, selectedVehicle, routePolyline }) => {
                                 attribution={overlay.attribution}
                             />
                         );
-                    } else {
-                        return (
-                            <EsriLayer
-                                key={id}
-                                type={overlay.type}
-                                url={overlay.url}
-                                attribution={overlay.attribution}
-                                opacity={0.8}
-                            />
-                        );
-                    }
-                })}
-
-                {/* Speeding Heatmap Layer - Shows excess speed violations */}
-                <SpeedingHeatmapLayer fleet={fleet} speedLimit={50} />
-                    if (overlay.type === 'heatmap') {
-                        return (
-                            <HeatmapLayer
-                                key={id}
-                                url={overlay.url}
-                                attribution={overlay.attribution}
-                            />
-                        );
                     }
                     return (
                         <EsriLayer
@@ -462,6 +627,18 @@ const MapView = ({ fleet, selectedVehicle, routePolyline }) => {
                         />
                     );
                 })}
+
+                {/* Speeding Heatmap Layer - Shows excess speed violations */}
+                <SpeedingHeatmapLayer fleet={fleet} speedLimit={50} />
+
+                {/* Route segments color by speed for selected vehicle */}
+                {speedSegments.map((segment, index) => (
+                    <Polyline
+                        key={`speed-seg-${index}`}
+                        positions={segment.positions}
+                        pathOptions={segment.style}
+                    />
+                ))}
 
                 {fleet.map(vehicle => (
                     <Marker
@@ -484,6 +661,41 @@ const MapView = ({ fleet, selectedVehicle, routePolyline }) => {
                     <Polyline positions={routePolyline} pathOptions={{ color: '#f59e0b', weight: 4, opacity: 0.9, dashArray: '8,4' }} />
                 )}
 
+                {SAFETY_FACILITIES.map(station => (
+                    <Marker key={station.id} position={station.location} icon={getSafetyIcon(station.type)}>
+                        <Popup>
+                            <div style={{ minWidth: '150px' }}>
+                                <strong>{station.name}</strong><br />
+                                Tipo: {station.type === 'police' ? 'Policía' : station.type === 'fire' ? 'Bomberos' : station.type === 'health' ? 'Cruz Roja' : 'Entidad de Socorro'}
+                            </div>
+                        </Popup>
+                    </Marker>
+                ))}
+
+                {/* Route Risk Alerts */}
+                {routeAlerts.map((alert, index) => (
+                    <Marker
+                        key={`alert-${index}`}
+                        position={[alert.coords[0], alert.coords[1]]}
+                        icon={L.divIcon({
+                            html: `<div style="display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:#dc2626;color:#fff;border:3px solid rgba(255,255,255,0.9);font-size:16px;font-weight:bold;">⚠️</div>`,
+                            className: 'route-alert-icon',
+                            iconSize: [40, 40],
+                            iconAnchor: [20, 20]
+                        })}
+                    >
+                        <Popup>
+                            <div style={{ minWidth: '200px', color: '#000' }}>
+                                <strong style={{ color: '#dc2626' }}>🚨 ALERTA DE RUTA</strong><br />
+                                <strong>Evento:</strong> {alert.evento}<br />
+                                <strong>Detalle:</strong> {alert.detalle}<br />
+                                <strong>Distancia a la vía:</strong> {alert.distancia_via} metros<br />
+                                <small style={{ color: '#666' }}>Detectado por análisis espacial PESV</small>
+                            </div>
+                        </Popup>
+                    </Marker>
+                ))}
+
                 {selectedVehicle && (
                     <ChangeView center={selectedVehicle.location} zoom={15} />
                 )}
@@ -494,6 +706,8 @@ const MapView = ({ fleet, selectedVehicle, routePolyline }) => {
                 onSwitch={setActiveBasemap}
                 activeOverlays={activeOverlays}
                 onToggleOverlay={toggleOverlay}
+                routeAlerts={routeAlerts}
+                alertsLoading={alertsLoading}
             />
         </div>
     );

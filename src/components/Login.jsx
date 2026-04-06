@@ -167,11 +167,18 @@ const Login = ({ onLogin }) => {
                             <Lock size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
                             <input
                                 type="password"
-                                placeholder="Número de identificación"
+                                placeholder={role === 'admin' ? "admon1234" : "Número de identificación"}
                                 value={password}
-                                onChange={(e) => setPassword(e.target.value.replace(/\D/g, '').slice(0, 12))}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (role === 'admin') {
+                                        setPassword(value);
+                                    } else {
+                                        setPassword(value.replace(/\D/g, '').slice(0, 12));
+                                    }
+                                }}
                                 style={{ paddingLeft: '2.5rem' }}
-                                maxLength={12}
+                                maxLength={role === 'admin' ? undefined : 12}
                                 required
                             />
                         </div>

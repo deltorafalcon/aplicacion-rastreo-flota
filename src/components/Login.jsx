@@ -40,16 +40,6 @@ const Login = ({ onLogin }) => {
                 return;
             }
 
-            if (!password.trim() || !passwordRegex.test(password.trim())) {
-                setError('La contraseña debe ser el número de identificación, solo dígitos y máximo 12.');
-                return;
-            }
-
-            if (password.trim() !== driverId.trim()) {
-                setError('La contraseña debe coincidir con el número de identificación.');
-                return;
-            }
-
             onLogin({
                 username: plateValue,
                 driverName: driverName.trim(),
@@ -161,30 +151,26 @@ const Login = ({ onLogin }) => {
                         </>
                     )}
 
-                    <div className="form-group">
-                        <label>Contraseña</label>
-                        <div style={{ position: 'relative' }}>
-                            <Lock size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
-                            <input
-                                type="password"
-                                placeholder={role === 'admin' ? "admon123" : "Número de identificación"}
-                                value={password}
-                                onChange={(e) => {
-                                    const inputValue = e.target.value;
-                                    if (role === 'admin') {
-                                        // Admin puede ingresar cualquier carácter
-                                        setPassword(inputValue);
-                                    } else {
-                                        // Conductor solo números (ID)
-                                        setPassword(inputValue.replace(/\D/g, '').slice(0, 12));
-                                    }
-                                }}
-                                style={{ paddingLeft: '2.5rem' }}
-                                maxLength={role === 'admin' ? 50 : 12}
-                                required
-                            />
+                    {role === 'admin' && (
+                        <div className="form-group">
+                            <label>Contraseña</label>
+                            <div style={{ position: 'relative' }}>
+                                <Lock size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
+                                <input
+                                    type="password"
+                                    placeholder="admon123"
+                                    value={password}
+                                    onChange={(e) => {
+                                        // Admin puede ingresar cualquier carácter alfanumérico
+                                        setPassword(e.target.value);
+                                    }}
+                                    style={{ paddingLeft: '2.5rem' }}
+                                    maxLength={50}
+                                    required
+                                />
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {error && (
                         <div style={{ color: 'var(--danger)', fontSize: '0.75rem', marginBottom: '1rem', textAlign: 'center' }}>

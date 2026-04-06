@@ -23,11 +23,11 @@ Después del despliegue, Vercel te dará una URL como:
 ### Actualizar URL del API
 En `src/components/MapView.jsx`, reemplaza:
 ```javascript
-const response = await fetch('https://tu-api.vercel.app/api/analizar-ruta', {
+const response = await fetch('https://tu-api.vercel.app/api/analizar-ruta-pro', {
 ```
 Con la URL real de Vercel:
 ```javascript
-const response = await fetch('https://pesv-rutograma-api.vercel.app/api/analizar-ruta', {
+const response = await fetch('https://pesv-rutograma-api.vercel.app/api/analizar-ruta-pro', {
 ```
 
 ### Desplegar Frontend en Vercel
@@ -92,12 +92,67 @@ curl -X POST "https://tu-api.vercel.app/api/analizar-ruta" \
 
 ```
 Frontend (React + Vite)
-    ↓ POST /api/analizar-ruta
+    ↓ POST /api/analizar-ruta-pro
 API (FastAPI + Vercel)
-    ↓ Consultas concurrentes
-UNGRD API + ANSV API
-    ↓ Procesamiento espacial
-Shapely + PyProj
+    ├── Motor Espacial (Shapely + PyProj)
+    ├── Motor de Reglas (Holidays + Lógica PESV)
+    └── Consultas concurrentes
+        ├── UNGRD API
+        └── ANSV API
+```
+
+## ⚖️ Cumplimiento Normativo
+
+### Resolución 0002307 de 2022
+- Restricciones de carga para vehículos > 3.4 toneladas
+- Aplicación automática durante festivos y fines de semana
+- Excepciones: Perecederos, Combustibles, Oxígeno medicinal
+
+### Plan Estratégico de Seguridad Vial (PESV)
+- Análisis dinámico de rutas basado en datos reales
+- Score de seguridad integrado
+- Recomendaciones automáticas para el despacho
+
+### Nuevas Funcionalidades
+- **Motor de Reglas Normativas**: Verifica restricciones de carga según normativa colombiana
+- **Análisis PESV Completo**: Combina riesgos viales con restricciones normativas
+- **Panel Normativo en Frontend**: Inputs para tipo de vehículo y peso, análisis en tiempo real
+- **Score de Seguridad**: Indicador visual (ÓPTIMO, RIESGO ALTO, CRÍTICO)
+
+### Endpoint Pro
+```bash
+curl -X POST "https://tu-api.vercel.app/api/analizar-ruta-pro?tipo_vehiculo=tractocamion&peso_toneladas=3.5" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "coordinates": [
+      [-74.26, 4.72],
+      [-74.20, 4.75]
+    ]
+  }'
+```
+
+### Respuesta del API Pro
+```json
+{
+  "metadata": {
+    "timestamp": "2024-01-15T10:30:00",
+    "unidad_monitoreo": "PESV / Logística"
+  },
+  "analisis_vial": {
+    "eventos_detectados": 2,
+    "detalle_alertas": [...]
+  },
+  "analisis_normativo": {
+    "aplica_restriccion": true,
+    "info_restriccion": {
+      "estado": "RESTRICCIÓN ACTIVA",
+      "motivo": "Puente Festivo / Fin de Semana",
+      "normativa": "Resolución 0002307 de 2022"
+    }
+  },
+  "score_seguridad": "CRÍTICO - NO DESPACHAR"
+}
+```
     ↓ Respuesta JSON
 Frontend (Marcadores + Panel)
 ```

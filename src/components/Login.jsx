@@ -18,7 +18,7 @@ const Login = ({ onLogin }) => {
         e.preventDefault();
 
         if (role === 'admin') {
-            if (username === 'admon' && password === 'admon1234') {
+            if (username === 'admon' && password === 'admon123') {
                 onLogin({ username, role: 'admin' });
             } else {
                 setError('Credenciales de Admin incorrectas.');
@@ -167,7 +167,7 @@ const Login = ({ onLogin }) => {
                             <Lock size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
                             <input
                                 type="password"
-                                placeholder={role === 'admin' ? "admon1234" : "Número de identificación"}
+                                placeholder={role === 'admin' ? "admon123" : "Número de identificación"}
                                 value={password}
                                 onChange={(e) => {
                                     const inputValue = e.target.value;

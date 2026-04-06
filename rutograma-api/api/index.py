@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Body
+from fastapi.middleware.cors import CORSMiddleware
 import httpx
 import asyncio
 from datetime import datetime
@@ -6,6 +7,15 @@ from .spatial_utils import check_risks_on_route
 from .rules_engine import obtener_restriccion_carga
 
 app = FastAPI(title="PESV Dynamic Risk API")
+
+# Configurar CORS para desarrollo local
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],  # Puerto por defecto de Vite
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 SOURCES = {
     "UNGRD": "https://datos.gov.co/resource/wwkg-r6te.json",

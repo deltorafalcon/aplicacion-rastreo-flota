@@ -5,6 +5,7 @@ import L from 'leaflet';
 import * as Esri from 'esri-leaflet';
 import 'leaflet.heat';
 import { getStoredRoute } from './RouteHistory';
+import { getApiUrl } from '../utils/apiConfig';
 
 // Fix for default marker icons in Leaflet + Vite
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -260,7 +261,7 @@ const BasemapSwitcher = ({ activeBasemap, onSwitch, activeOverlays, onToggleOver
         try {
             const coordinates = routePolyline.map(point => [point[1], point[0]]);
 
-            const response = await fetch('https://tu-api.vercel.app/api/analizar-ruta-pro', {
+            const response = await fetch(`${getApiUrl()}/api/analizar-ruta-pro`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -690,7 +691,7 @@ const MapView = ({ fleet, selectedVehicle, routePolyline }) => {
                 // Convert routePolyline to coordinates format [lon, lat]
                 const coordinates = routePolyline.map(point => [point[1], point[0]]); // Leaflet uses [lat, lon], API expects [lon, lat]
 
-                const response = await fetch('https://tu-api.vercel.app/api/analizar-ruta-pro', {
+                const response = await fetch(`${getApiUrl()}/api/analizar-ruta-pro`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

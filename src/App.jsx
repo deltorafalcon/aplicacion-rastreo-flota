@@ -229,8 +229,8 @@ function App() {
   // --- Driver View Rendering ---
   if (auth.role === 'driver') {
     return (
-      <div className="driver-view app-container" style={{ padding: '2rem', textAlign: 'center' }}>
-        <div className="glass-card" style={{ padding: '2rem', maxWidth: '400px', margin: 'auto' }}>
+      <div className="driver-view-overlay">
+        <div className="driver-card-floating glass-card">
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
             <div className="status-dot pulsing" style={{
               width: '12px',
@@ -239,7 +239,10 @@ function App() {
               background: 'var(--success)',
               boxShadow: '0 0 10px var(--success)'
             }}></div>
-            <h2 style={{ color: 'var(--accent-color)', margin: 0 }}>Tracking Activo</h2>
+            <div style={{ textAlign: 'center' }}>
+              <h2 style={{ color: 'var(--accent-color)', margin: 0 }}>Conductor Responsable</h2>
+              <p style={{ margin: '0.25rem 0 0', color: 'var(--text-dim)', fontSize: '0.95rem' }}>Manejo Preventivo</p>
+            </div>
           </div>
           <div style={{ margin: '1.5rem 0', textAlign: 'left' }}>
             <p style={{ margin: '0.5rem 0' }}>Conductor: <strong>{auth.driverName}</strong></p>

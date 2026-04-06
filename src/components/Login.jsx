@@ -9,9 +9,10 @@ const Login = ({ onLogin }) => {
     const [role, setRole] = useState('driver');
     const [error, setError] = useState('');
 
-    const plateRegex = /^[A-Z]{3}-?\d{3}$/;
-    const driverNameRegex = /^[A-Za-zÁÉÍÓÚÑáéíóúñ\s]+$/;
+    const plateRegex = /^[A-Z]{3}\d{3}$/;
+    const driverNameRegex = /^[a-záéíóúñ\s]+$/;
     const driverIdRegex = /^\d{1,12}$/;
+    const passwordRegex = /^\d{1,12}$/;
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -25,12 +26,12 @@ const Login = ({ onLogin }) => {
         } else {
             const plateValue = username.toUpperCase().trim();
             if (!plateRegex.test(plateValue)) {
-                setError('La placa debe ser 3 letras seguidas de 3 números, por ejemplo ABC-123.');
+                setError('La placa debe ser 3 letras mayúsculas seguidas de 3 números, por ejemplo ABC123.');
                 return;
             }
 
             if (!driverName.trim() || !driverNameRegex.test(driverName.trim())) {
-                setError('El nombre del conductor solo puede contener letras y espacios.');
+                setError('El nombre del conductor solo puede contener letras minúsculas y espacios.');
                 return;
             }
 
@@ -39,17 +40,22 @@ const Login = ({ onLogin }) => {
                 return;
             }
 
-            if (password === 'driver123') {
-                const normalizedPlate = plateValue.includes('-') ? plateValue : `${plateValue.slice(0, 3)}-${plateValue.slice(3)}`;
-                onLogin({
-                    username: normalizedPlate,
-                    driverName: driverName.trim(),
-                    driverId: driverId.trim(),
-                    role: 'driver'
-                });
-            } else {
-                setError('Contraseña de conductor incorrecta (prueba: driver123)');
+            if (!password.trim() || !passwordRegex.test(password.trim())) {
+                setError('La contraseña debe ser el número de identificación, solo dígitos y máximo 12.');
+                return;
             }
+
+            if (password.trim() !== driverId.trim()) {
+                setError('La contraseña debe coincidir con el número de identificación.');
+                return;
+            }
+
+            onLogin({
+                username: plateValue,
+                driverName: driverName.trim(),
+                driverId: driverId.trim(),
+                role: 'driver'
+            });
         }
     };
 
@@ -161,10 +167,11 @@ const Login = ({ onLogin }) => {
                             <Lock size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
                             <input
                                 type="password"
-                                placeholder="••••••••"
+                                placeholder="Número de identificación"
                                 value={password}
-                                onChange={(e) => setPassword(e.target.value)}
+                                onChange={(e) => setPassword(e.target.value.replace(/\D/g, '').slice(0, 12))}
                                 style={{ paddingLeft: '2.5rem' }}
+                                maxLength={12}
                                 required
                             />
                         </div>

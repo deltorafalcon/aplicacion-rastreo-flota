@@ -12,7 +12,7 @@ const Login = ({ onLogin }) => {
         e.preventDefault();
 
         if (role === 'admin') {
-            if (username === 'general admin' && password === 'admin123') {
+            if (username === 'admin' && password === 'admin123') {
                 onLogin({ username, role: 'admin' });
             } else {
                 setError('Credenciales de Admin incorrectas.');
@@ -82,7 +82,7 @@ const Login = ({ onLogin }) => {
                             <User size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
                             <input
                                 type="text"
-                                placeholder={role === 'admin' ? "general admin" : "ABC-123"}
+                                placeholder={role === 'admin' ? "admin" : "ABC-123"}
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 style={{ paddingLeft: '2.5rem' }}

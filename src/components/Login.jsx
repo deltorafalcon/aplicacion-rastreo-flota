@@ -170,15 +170,17 @@ const Login = ({ onLogin }) => {
                                 placeholder={role === 'admin' ? "admon1234" : "Número de identificación"}
                                 value={password}
                                 onChange={(e) => {
-                                    const value = e.target.value;
+                                    const inputValue = e.target.value;
                                     if (role === 'admin') {
-                                        setPassword(value);
+                                        // Admin puede ingresar cualquier carácter
+                                        setPassword(inputValue);
                                     } else {
-                                        setPassword(value.replace(/\D/g, '').slice(0, 12));
+                                        // Conductor solo números (ID)
+                                        setPassword(inputValue.replace(/\D/g, '').slice(0, 12));
                                     }
                                 }}
                                 style={{ paddingLeft: '2.5rem' }}
-                                maxLength={role === 'admin' ? undefined : 12}
+                                maxLength={role === 'admin' ? 50 : 12}
                                 required
                             />
                         </div>

@@ -184,7 +184,7 @@ const Login = ({ onLogin }) => {
                     )}
 
                     <button type="submit" className="login-button">
-                        Entrar como {role === 'admin' ? 'Administrador' : 'Conductor'}
+                        {role === 'admin' ? 'Entrar como Administrador' : 'ingresa Conductor Superpreventivo'}
                     </button>
                 </form>
 

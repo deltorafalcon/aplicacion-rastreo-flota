@@ -110,18 +110,18 @@ const Login = ({ onLogin }) => {
                             <User size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
                             <input
                                 type="text"
-                                placeholder={role === 'admin' ? "admin" : "ABC-123"}
+                                placeholder={role === 'admin' ? "admin" : "ABC123"}
                                 value={username}
                                 onChange={(e) => {
-                                    const value = e.target.value.toUpperCase();
+                                    const value = e.target.value;
                                     if (role === 'driver') {
-                                        setUsername(value.replace(/[^A-Z0-9-]/g, '').slice(0, 7));
+                                        setUsername(value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6));
                                     } else {
-                                        setUsername(value);
+                                        setUsername(value.toLowerCase().replace(/[^a-z0-9]/g, ''));
                                     }
                                 }}
                                 style={{ paddingLeft: '2.5rem' }}
-                                maxLength={role === 'driver' ? 7 : undefined}
+                                maxLength={role === 'driver' ? 6 : undefined}
                                 required
                             />
                         </div>
@@ -130,7 +130,7 @@ const Login = ({ onLogin }) => {
                     {role === 'driver' && (
                         <>
                             <div className="form-group">
-                                <label>nombre del conductor</label>
+                                <label>Nombre del Conductor</label>
                                 <div style={{ position: 'relative' }}>
                                     <User size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
                                     <input
@@ -144,7 +144,7 @@ const Login = ({ onLogin }) => {
                                 </div>
                             </div>
                             <div className="form-group">
-                                <label>identificación del conductor</label>
+                                <label>Identificación del Conductor</label>
                                 <div style={{ position: 'relative' }}>
                                     <User size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
                                     <input
@@ -184,7 +184,7 @@ const Login = ({ onLogin }) => {
                     )}
 
                     <button type="submit" className="login-button">
-                        entrar como {role === 'admin' ? 'administrador' : 'conductor'}
+                        Entrar como {role === 'admin' ? 'Administrador' : 'Conductor'}
                     </button>
                 </form>
 

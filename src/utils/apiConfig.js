@@ -7,6 +7,6 @@ export const getApiUrl = () => {
     return 'http://localhost:8000';
   }
 
-  // En producción, usar Vercel (esta URL debe actualizarse cuando se despliegue)
-  return 'https://tu-api.vercel.app';
+  // En producción, usar el mismo dominio del frontend y el prefijo /api
+  return '';
 };

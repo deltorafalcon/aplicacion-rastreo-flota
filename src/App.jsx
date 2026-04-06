@@ -3,6 +3,7 @@ import './index.css';
 import MapView from './components/MapView';
 import FleetDashboard from './components/FleetDashboard';
 import SpeedDashboard from './components/SpeedDashboard';
+import ComplianceAnalytics from './components/ComplianceAnalytics';
 import Login from './components/Login';
 import RouteHistory, { saveRoutePoint } from './components/RouteHistory';
 import { generateMockFleet } from './utils/vehicleMock';
@@ -282,59 +283,76 @@ function App() {
         speedingLogCount={speedingLog.length}
         dailyStats={dailyStats[new Date().toISOString().split('T')[0]] || {}}
         onShowRouteHistory={() => setShowRouteHistory(true)}
+        adminView={adminView}
+        onViewChange={setAdminView}
       />
-      <div style={{
-        position: 'fixed',
-        bottom: '80px',
-        left: '20px',
-        zIndex: 1000
-      }}>
-        <button
-          onClick={() => {
-            const mockVehicle = {
-              id: 'MOCK-999',
-              name: 'Vehículo de Prueba',
-              driver: 'Simulador',
-              plate: 'MOCK-999',
-              location: [4.6097, -74.0817],
-              speed: 95,
-              status: 'speeding',
-              route: 'Prueba de Alerta',
-              lastUpdate: Date.now()
-            };
-            setFleet(prev => {
-              const exists = prev.find(v => v.id === mockVehicle.id);
-              if (exists) return prev.map(v => v.id === mockVehicle.id ? mockVehicle : v);
-              return [...prev, mockVehicle];
-            });
-          }}
-          className="glass-card"
-          style={{
-            padding: '8px 12px',
-            fontSize: '0.7rem',
-            background: 'rgba(239, 68, 68, 0.2)',
-            border: '1px solid var(--danger)',
-            color: 'white',
-            cursor: 'pointer',
-            borderRadius: '8px'
-          }}
-        >
-          🚨 Simular Exceso
-        </button>
-      </div>
-      <div className="map-container">
-        <MapView
-          fleet={fleet}
-          selectedVehicle={selectedVehicle}
-        />
-      </div>
-      <SpeedDashboard
-        fleet={fleet}
-        speedingLog={speedingLog}
-        speedLimit={speedLimit}
-        onSetLimit={(l) => setSpeedLimit(l)}
-        onClearLog={handleClearLog}
-      />
+      
+      {adminView === 'map' && (
+        <>
+          <div style={{
+            position: 'fixed',
+            bottom: '80px',
+            left: '20px',
+            zIndex: 1000
+          }}>
+            <button
+              onClick={() => {
+                const mockVehicle = {
+                  id: 'MOCK-999',
+                  name: 'Vehículo de Prueba',
+                  driver: 'Simulador',
+                  plate: 'MOCK-999',
+                  location: [4.6097, -74.0817],
+                  speed: 95,
+                  status: 'speeding',
+                  route: 'Prueba de Alerta',
+                  lastUpdate: Date.now()
+                };
+                setFleet(prev => {
+                  const exists = prev.find(v => v.id === mockVehicle.id);
+                  if (exists) return prev.map(v => v.id === mockVehicle.id ? mockVehicle : v);
+                  return [...prev, mockVehicle];
+                });
+              }}
+              className="glass-card"
+              style={{
+                padding: '8px 12px',
+                fontSize: '0.7rem',
+                background: 'rgba(239, 68, 68, 0.2)',
+                border: '1px solid var(--danger)',
+                color: 'white',
+                cursor: 'pointer',
+                borderRadius: '8px'
+              }}
+            >
+              🚨 Simular Exceso
+            </button>
+          </div>
+          <div className="map-container">
+            <MapView
+              fleet={fleet}
+              selectedVehicle={selectedVehicle}
+            />
+          </div>
+          <SpeedDashboard
+            fleet={fleet}
+            speedingLog={speedingLog}
+            speedLimit={speedLimit}
+            onSetLimit={(l) => setSpeedLimit(l)}
+            onClearLog={handleClearLog}
+          />
+        </>
+      )}
+      
+      {adminView === 'compliance' && (
+        <div style={{ marginLeft: '280px', height: '100vh', overflowY: 'auto' }}>
+          <ComplianceAnalytics
+            fleet={fleet}
+            speedingLog={speedingLog}
+            dailyStats={dailyStats[new Date().toISOString().split('T')[0]] || {}}
+          />
+        </div>
+      )}
     </div>
   );
 }

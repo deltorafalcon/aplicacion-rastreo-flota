@@ -1,7 +1,7 @@
 import React from 'react';
-import { Truck, Navigation, AlertTriangle, ShieldCheck, User, MapPin, LogOut, Gauge } from 'lucide-react';
+import { Truck, Navigation, AlertTriangle, ShieldCheck, User, MapPin, LogOut, Gauge, BarChart3, Map, Scale } from 'lucide-react';
 
-const FleetDashboard = ({ fleet, onSelect, selectedId, onLogout, speedingLogCount, dailyStats, onShowRouteHistory }) => {
+const FleetDashboard = ({ fleet, onSelect, selectedId, onLogout, speedingLogCount, dailyStats, onShowRouteHistory, adminView, onViewChange }) => {
     const speedingCountNow = fleet.filter(v => v.status === 'speeding').length;
 
     return (
@@ -114,6 +114,52 @@ const FleetDashboard = ({ fleet, onSelect, selectedId, onLogout, speedingLogCoun
                         </div>
                     );
                 })}
+            </div>
+
+            <div style={{ padding: '1rem', borderTop: '1px solid var(--glass-border)' }}>
+                <div style={{ fontSize: '0.85rem', marginBottom: '0.75rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Vistas
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <button
+                        onClick={() => onViewChange('map')}
+                        style={{
+                            padding: '0.75rem',
+                            background: adminView === 'map' ? 'rgba(6,182,212,0.2)' : 'rgba(255,255,255,0.05)',
+                            border: `1px solid ${adminView === 'map' ? 'var(--accent-color)' : 'var(--glass-border)'}`,
+                            color: adminView === 'map' ? 'var(--accent-color)' : 'white',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            fontSize: '0.9rem',
+                            fontWeight: adminView === 'map' ? '600' : '500',
+                            transition: 'all 0.3s ease'
+                        }}
+                    >
+                        <Map size={16} /> Mapa en Vivo
+                    </button>
+                    <button
+                        onClick={() => onViewChange('compliance')}
+                        style={{
+                            padding: '0.75rem',
+                            background: adminView === 'compliance' ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.05)',
+                            border: `1px solid ${adminView === 'compliance' ? 'var(--success)' : 'var(--glass-border)'}`,
+                            color: adminView === 'compliance' ? 'var(--success)' : 'white',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            fontSize: '0.9rem',
+                            fontWeight: adminView === 'compliance' ? '600' : '500',
+                            transition: 'all 0.3s ease'
+                        }}
+                    >
+                        <Scale size={16} /> Análisis Normativo
+                    </button>
+                </div>
             </div>
 
             <div className="logout-container" style={{ flexDirection: 'column', gap: '0.5rem' }}>

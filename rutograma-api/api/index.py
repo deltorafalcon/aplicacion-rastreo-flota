@@ -1,61 +1,50 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Body
 import httpx
 import asyncio
-from datetime import datetime
+from .spatial_utils import check_risks_on_route
 
 app = FastAPI(title="PESV Dynamic Risk API")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+SOURCES = {
+    "UNGRD": "https://datos.gov.co/resource/wwkg-r6te.json",
+    "ACCIDENTES": "https://datos.gov.co/resource/v5m2-p35c.json"
+}
 
-UNGRD_API = "https://datos.gov.co/resource/wwkg-r6te.json"
-VIAS_API = "https://datos.gov.co/resource/v5m2-p35c.json"
-
-async def fetch_ungrd_events(depto: str):
-    async with httpx.AsyncClient() as client:
-        params = {
-            "departamento": depto.upper(),
-            "$where": "vias_averiadas > 0 OR puentes_vehiculares > 0",
-            "$order": "fecha_inicio DESC",
-            "$limit": 10
-        }
-        response = await client.get(UNGRD_API, params=params, timeout=20.0)
-        response.raise_for_status()
+async def fetch_data(url, params):
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        response = await client.get(url, params=params)
         return response.json()
 
-async def fetch_weather_risk(lat: float, lon: float):
-    # Simulamos respuesta de OpenWeather para el flujo del rutograma.
+@app.post("/api/analizar-ruta")
+async def analizar_ruta(
+    payload: dict = Body(...),
+    radio: int = 1000
+):
+    """
+    Recibe coordenadas de ruta y devuelve riesgos del PESV.
+    """
+    coords = payload.get("coordinates")
+
+    if not coords or len(coords) < 2:
+        return {"error": "Se requieren al menos 2 coordenadas"}
+
+    # Consultas paralelas a fuentes oficiales
+    tasks = [
+        fetch_data(SOURCES["UNGRD"], {"$limit": 100, "$order": "fecha_inicio DESC"}),
+        fetch_data(SOURCES["ACCIDENTES"], {"$limit": 100, "$order": "fecha DESC"})
+    ]
+
+    results = await asyncio.gather(*tasks)
+    all_incidents = results[0] + results[1]
+
+    # Análisis espacial
+    alertas = check_risks_on_route(coords, all_incidents, buffer_meters=radio)
+
     return {
-        "precipitacion": "Moderada",
-        "visibilidad": "80%",
-        "alerta": "Neblina en zona de montaña"
-    }
-
-@app.get("/api/v1/rutograma/analisis")
-async def get_route_risk(lat: float, lon: float, depto: str = "CUNDINAMARCA"):
-    ungrd_task = fetch_ungrd_events(depto)
-    weather_task = fetch_weather_risk(lat, lon)
-
-    events, weather = await asyncio.gather(ungrd_task, weather_task)
-
-    risk_level = "Bajo"
-    if len(events) > 0 or "Lluvia" in weather.get('precipitacion', ''):
-        risk_level = "Alto - Requiere validación de Despacho"
-
-    return {
-        "timestamp": datetime.now().isoformat(),
-        "coordenadas_consulta": {"lat": lat, "lon": lon},
-        "estado_vias_ungrd": events,
-        "condiciones_climaticas": weather,
-        "score_pesv": {
-            "nivel_riesgo": risk_level,
-            "recomendacion": "Verificar cadena de tracción y luces antiniebla."
-        }
+        "status": "success",
+        "riesgo_total": len(alertas),
+        "alertas": alertas,
+        "recomendacion_pesv": "ALTA PRECAUCIÓN" if alertas else "RUTA DESPEJADA"
     }
 
 @app.get("/api/v1/salud")

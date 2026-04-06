@@ -3,10 +3,15 @@ import { ShieldCheck, Lock, User } from 'lucide-react';
 
 const Login = ({ onLogin }) => {
     const [username, setUsername] = useState(''); // Servirá como Placa
-    const [driverName, setDriverName] = useState(''); // Nuevo campo
+    const [driverName, setDriverName] = useState(''); // nombre del conductor
+    const [driverId, setDriverId] = useState(''); // identificación numérica
     const [password, setPassword] = useState('');
     const [role, setRole] = useState('driver');
     const [error, setError] = useState('');
+
+    const plateRegex = /^[A-Z]{3}-?\d{3}$/;
+    const driverNameRegex = /^[A-Za-zÁÉÍÓÚÑáéíóúñ\s]+$/;
+    const driverIdRegex = /^\d{1,12}$/;
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -18,11 +23,28 @@ const Login = ({ onLogin }) => {
                 setError('Credenciales de Admin incorrectas.');
             }
         } else {
+            const plateValue = username.toUpperCase().trim();
+            if (!plateRegex.test(plateValue)) {
+                setError('La placa debe ser 3 letras seguidas de 3 números, por ejemplo ABC-123.');
+                return;
+            }
+
+            if (!driverName.trim() || !driverNameRegex.test(driverName.trim())) {
+                setError('El nombre del conductor solo puede contener letras y espacios.');
+                return;
+            }
+
+            if (!driverId.trim() || !driverIdRegex.test(driverId.trim())) {
+                setError('La identificación debe ser solo números y hasta 12 dígitos.');
+                return;
+            }
+
             if (password === 'driver123') {
-                // Pasamos placa y nombre al login
+                const normalizedPlate = plateValue.includes('-') ? plateValue : `${plateValue.slice(0, 3)}-${plateValue.slice(3)}`;
                 onLogin({
-                    username: username.toUpperCase(), // Placa
-                    driverName: driverName,
+                    username: normalizedPlate,
+                    driverName: driverName.trim(),
+                    driverId: driverId.trim(),
                     role: 'driver'
                 });
             } else {
@@ -84,28 +106,53 @@ const Login = ({ onLogin }) => {
                                 type="text"
                                 placeholder={role === 'admin' ? "admin" : "ABC-123"}
                                 value={username}
-                                onChange={(e) => setUsername(e.target.value)}
+                                onChange={(e) => {
+                                    const value = e.target.value.toUpperCase();
+                                    if (role === 'driver') {
+                                        setUsername(value.replace(/[^A-Z0-9-]/g, '').slice(0, 7));
+                                    } else {
+                                        setUsername(value);
+                                    }
+                                }}
                                 style={{ paddingLeft: '2.5rem' }}
+                                maxLength={role === 'driver' ? 7 : undefined}
                                 required
                             />
                         </div>
                     </div>
 
                     {role === 'driver' && (
-                        <div className="form-group">
-                            <label>Nombre del Conductor</label>
-                            <div style={{ position: 'relative' }}>
-                                <User size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
-                                <input
-                                    type="text"
-                                    placeholder="Nombre completo"
-                                    value={driverName}
-                                    onChange={(e) => setDriverName(e.target.value)}
-                                    style={{ paddingLeft: '2.5rem' }}
-                                    required
-                                />
+                        <>
+                            <div className="form-group">
+                                <label>Nombre del Conductor</label>
+                                <div style={{ position: 'relative' }}>
+                                    <User size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
+                                    <input
+                                        type="text"
+                                        placeholder="Nombre completo"
+                                        value={driverName}
+                                        onChange={(e) => setDriverName(e.target.value.replace(/[^A-Za-zÁÉÍÓÚÑáéíóúñ\s]/g, ''))}
+                                        style={{ paddingLeft: '2.5rem' }}
+                                        required
+                                    />
+                                </div>
                             </div>
-                        </div>
+                            <div className="form-group">
+                                <label>Identificación del Conductor</label>
+                                <div style={{ position: 'relative' }}>
+                                    <User size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
+                                    <input
+                                        type="text"
+                                        placeholder="Solo números, hasta 12 dígitos"
+                                        value={driverId}
+                                        onChange={(e) => setDriverId(e.target.value.replace(/\D/g, '').slice(0, 12))}
+                                        style={{ paddingLeft: '2.5rem' }}
+                                        maxLength={12}
+                                        required
+                                    />
+                                </div>
+                            </div>
+                        </>
                     )}
 
                     <div className="form-group">

@@ -45,6 +45,7 @@ function App() {
           id: auth.username,
           name: auth.driverName,
           driver: auth.driverName,
+          driverId: auth.driverId,
           plate: auth.username,
           location: [pos.lat, pos.lng],
           speed: pos.speed,
@@ -242,6 +243,7 @@ function App() {
           </div>
           <div style={{ margin: '1.5rem 0', textAlign: 'left' }}>
             <p style={{ margin: '0.5rem 0' }}>Conductor: <strong>{auth.driverName}</strong></p>
+            <p style={{ margin: '0.5rem 0' }}>Identificación: <strong>{auth.driverId}</strong></p>
             <p style={{ margin: '0.5rem 0' }}>Vehículo (Placa): <strong>{auth.username}</strong></p>
           </div>
 

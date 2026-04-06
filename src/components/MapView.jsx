@@ -247,8 +247,46 @@ function ChangeView({ center, zoom }) {
 }
 
 // Basemap Switcher Component
-const BasemapSwitcher = ({ activeBasemap, onSwitch, activeOverlays, onToggleOverlay, routeAlerts, alertsLoading }) => {
+const BasemapSwitcher = ({ activeBasemap, onSwitch, activeOverlays, onToggleOverlay, routeAlerts, alertsLoading, tipoVehiculo, setTipoVehiculo, pesoToneladas, setPesoToneladas, normativeAnalysis, setNormativeAnalysis, normativeLoading, setNormativeLoading, routePolyline }) => {
     const [isOpen, setIsOpen] = useState(false);
+
+    const analyzeNormativeRoute = async () => {
+        if (!routePolyline || routePolyline.length < 2) {
+            alert('Primero selecciona un vehículo con ruta para analizar.');
+            return;
+        }
+
+        setNormativeLoading(true);
+        try {
+            const coordinates = routePolyline.map(point => [point[1], point[0]]);
+
+            const response = await fetch('https://tu-api.vercel.app/api/analizar-ruta-pro', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    coordinates: coordinates
+                }),
+                params: {
+                    tipo_vehiculo: tipoVehiculo,
+                    peso_toneladas: pesoToneladas
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Error en la respuesta del API');
+            }
+
+            const data = await response.json();
+            setNormativeAnalysis(data);
+        } catch (error) {
+            console.error('Error analizando ruta normativa:', error);
+            setNormativeAnalysis(null);
+        } finally {
+            setNormativeLoading(false);
+        }
+    };
 
     return (
         <div style={{
@@ -467,6 +505,117 @@ const BasemapSwitcher = ({ activeBasemap, onSwitch, activeOverlays, onToggleOver
                         </div>
                     )}
 
+                    {/* Normative Analysis Section */}
+                    <div style={{
+                        fontSize: '0.65rem',
+                        color: 'rgba(255,255,255,0.5)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px',
+                        marginBottom: '8px',
+                        paddingLeft: '4px',
+                        borderTop: '1px solid rgba(255,255,255,0.08)',
+                        paddingTop: '12px'
+                    }}>
+                        Análisis Normativo PESV
+                    </div>
+                    <div style={{
+                        marginBottom: '12px',
+                        padding: '10px',
+                        borderRadius: '12px',
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1px solid rgba(255,255,255,0.08)'
+                    }}>
+                        <div style={{ marginBottom: '8px' }}>
+                            <label style={{ fontSize: '0.7rem', color: '#e2e8f0', display: 'block', marginBottom: '4px' }}>Tipo de Vehículo</label>
+                            <select
+                                value={tipoVehiculo}
+                                onChange={(e) => setTipoVehiculo(e.target.value)}
+                                style={{
+                                    width: '100%',
+                                    padding: '6px',
+                                    borderRadius: '6px',
+                                    border: '1px solid rgba(255,255,255,0.2)',
+                                    background: 'rgba(0,0,0,0.3)',
+                                    color: '#fff',
+                                    fontSize: '0.7rem'
+                                }}
+                            >
+                                <option value="sencillo">Sencillo</option>
+                                <option value="dobletroque">Doble Troque</option>
+                                <option value="tractocamion">Tracto Camión</option>
+                            </select>
+                        </div>
+                        <div style={{ marginBottom: '8px' }}>
+                            <label style={{ fontSize: '0.7rem', color: '#e2e8f0', display: 'block', marginBottom: '4px' }}>Peso (Toneladas)</label>
+                            <input
+                                type="number"
+                                value={pesoToneladas}
+                                onChange={(e) => setPesoToneladas(parseFloat(e.target.value) || 0)}
+                                min="0"
+                                step="0.1"
+                                style={{
+                                    width: '100%',
+                                    padding: '6px',
+                                    borderRadius: '6px',
+                                    border: '1px solid rgba(255,255,255,0.2)',
+                                    background: 'rgba(0,0,0,0.3)',
+                                    color: '#fff',
+                                    fontSize: '0.7rem'
+                                }}
+                            />
+                        </div>
+                        <button
+                            onClick={analyzeNormativeRoute}
+                            disabled={normativeLoading}
+                            style={{
+                                width: '100%',
+                                padding: '8px',
+                                borderRadius: '6px',
+                                border: 'none',
+                                background: normativeLoading ? 'rgba(59, 130, 246, 0.5)' : '#3b82f6',
+                                color: '#fff',
+                                fontSize: '0.7rem',
+                                fontWeight: 600,
+                                cursor: normativeLoading ? 'not-allowed' : 'pointer'
+                            }}
+                        >
+                            {normativeLoading ? 'Analizando...' : 'Analizar Ruta PESV'}
+                        </button>
+                    </div>
+
+                    {normativeAnalysis && (
+                        <div style={{
+                            marginTop: '12px',
+                            padding: '10px',
+                            borderRadius: '12px',
+                            background: normativeAnalysis.score_seguridad.includes('CRÍTICO') ? 'rgba(220, 38, 38, 0.1)' : 'rgba(34, 197, 94, 0.1)',
+                            border: normativeAnalysis.score_seguridad.includes('CRÍTICO') ? '1px solid rgba(220, 38, 38, 0.3)' : '1px solid rgba(34, 197, 94, 0.3)'
+                        }}>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 700, marginBottom: '8px', color: normativeAnalysis.score_seguridad.includes('CRÍTICO') ? '#fca5a5' : '#86efac' }}>
+                                📋 Análisis Normativo PESV
+                            </div>
+                            <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.75)', marginBottom: '8px' }}>
+                                <strong>Score de Seguridad:</strong> {normativeAnalysis.score_seguridad}
+                            </div>
+                            {normativeAnalysis.analisis_normativo.info_restriccion && (
+                                <div style={{ marginBottom: '8px' }}>
+                                    <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#fff' }}>
+                                        Restricción de Carga: {normativeAnalysis.analisis_normativo.info_restriccion.estado}
+                                    </div>
+                                    <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.8)' }}>
+                                        {normativeAnalysis.analisis_normativo.info_restriccion.motivo}
+                                    </div>
+                                    <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.6)' }}>
+                                        Norma: {normativeAnalysis.analisis_normativo.info_restriccion.normativa}
+                                    </div>
+                                </div>
+                            )}
+                            <div style={{ fontSize: '0.7rem', color: '#e2e8f0' }}>
+                                Eventos detectados: {normativeAnalysis.analisis_vial.eventos_detectados}
+                            </div>
+                        </div>
+                    )}
+
                     <div style={{
                         marginTop: '10px',
                         paddingTop: '10px',
@@ -491,6 +640,10 @@ const MapView = ({ fleet, selectedVehicle, routePolyline }) => {
     const [routePoints, setRoutePoints] = useState([]);
     const [routeAlerts, setRouteAlerts] = useState([]);
     const [alertsLoading, setAlertsLoading] = useState(false);
+    const [tipoVehiculo, setTipoVehiculo] = useState('tractocamion');
+    const [pesoToneladas, setPesoToneladas] = useState(3.5);
+    const [normativeAnalysis, setNormativeAnalysis] = useState(null);
+    const [normativeLoading, setNormativeLoading] = useState(false);
     const currentBasemap = BASEMAPS[activeBasemap];
     const today = new Date().toISOString().split('T')[0];
 
@@ -537,14 +690,18 @@ const MapView = ({ fleet, selectedVehicle, routePolyline }) => {
                 // Convert routePolyline to coordinates format [lon, lat]
                 const coordinates = routePolyline.map(point => [point[1], point[0]]); // Leaflet uses [lat, lon], API expects [lon, lat]
 
-                const response = await fetch('https://tu-api.vercel.app/api/analizar-ruta', {
+                const response = await fetch('https://tu-api.vercel.app/api/analizar-ruta-pro', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
                         coordinates: coordinates
-                    })
+                    }),
+                    params: {
+                        tipo_vehiculo: 'tractocamion',
+                        peso_toneladas: 3.5
+                    }
                 });
 
                 if (!response.ok) {
@@ -708,6 +865,15 @@ const MapView = ({ fleet, selectedVehicle, routePolyline }) => {
                 onToggleOverlay={toggleOverlay}
                 routeAlerts={routeAlerts}
                 alertsLoading={alertsLoading}
+                tipoVehiculo={tipoVehiculo}
+                setTipoVehiculo={setTipoVehiculo}
+                pesoToneladas={pesoToneladas}
+                setPesoToneladas={setPesoToneladas}
+                normativeAnalysis={normativeAnalysis}
+                setNormativeAnalysis={setNormativeAnalysis}
+                normativeLoading={normativeLoading}
+                setNormativeLoading={setNormativeLoading}
+                routePolyline={routePolyline}
             />
         </div>
     );
